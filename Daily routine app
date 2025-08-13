@@ -1,0 +1,633 @@
+import React, { useState, useEffect } from ‘react’;
+import { Check, Edit, Calendar, Clock, Star, BarChart3, Settings, TrendingDown, AlertCircle } from ‘lucide-react’;
+
+const DailyRoutineApp = () => {
+const [currentDate, setCurrentDate] = useState(new Date());
+const [completedTasks, setCompletedTasks] = useState(new Set());
+const [showMotivation, setShowMotivation] = useState(false);
+const [motivationQuote, setMotivationQuote] = useState(’’);
+const [isEditMode, setIsEditMode] = useState(false);
+const [editableSchedule, setEditableSchedule] = useState(null);
+const [currentView, setCurrentView] = useState(‘routine’); // ‘routine’, ‘dashboard’, ‘master’
+const [missedTasksHistory, setMissedTasksHistory] = useState({});
+
+// Restructured schedule with 4-hour time slots
+const defaultSchedule = [
+{
+id: 1,
+timeSlot: “5:30 AM - 9:30 AM”,
+period: “Morning Routine”,
+tasks: [
+{ id: ‘wake’, time: ‘5:30 AM’, task: ‘Wake up’, type: ‘basic’ },
+{ id: ‘water’, time: ‘5:30-5:35 AM’, task: ‘Drink 1 glass water with lemon juice’, type: ‘basic’ },
+{ id: ‘balcony’, time: ‘5:35-5:40 AM’, task: ‘Stand in balcony for 5 minutes’, type: ‘basic’ },
+{ id: ‘bowel’, time: ‘5:40-5:55 AM’, task: ‘Clean bowel’, type: ‘basic’ },
+{ id: ‘brush’, time: ‘5:55-6:00 AM’, task: ‘Brush teeth’, type: ‘basic’ },
+{ id: ‘exercise’, time: ‘6:00-6:35 AM’, task: ‘Exercise’, type: ‘motivational’ },
+{ id: ‘meditation’, time: ‘6:35-6:45 AM’, task: ‘Meditation’, type: ‘motivational’ },
+{ id: ‘smoothie’, time: ‘6:45-7:00 AM’, task: ‘Prepare smoothie’, type: ‘basic’ },
+{ id: ‘market’, time: ‘7:00-7:45 AM’, task: ‘Market study’, type: ‘motivational’ },
+{ id: ‘toddler1’, time: ‘7:45-8:45 AM’, task: ‘Drink smoothie and play with toddler’, type: ‘basic’ },
+{ id: ‘ready’, time: ‘8:45-9:15 AM’, task: ‘Get ready for office’, type: ‘basic’ },
+{ id: ‘prep’, time: ‘9:15-9:30 AM’, task: ‘Final office preparation’, type: ‘basic’ }
+]
+},
+{
+id: 2,
+timeSlot: “9:30 AM - 1:30 PM”,
+period: “Office Morning”,
+tasks: [
+{ id: ‘commute’, time: ‘9:30 AM’, task: ‘Go to office’, type: ‘basic’ },
+{ id: ‘work1’, time: ‘10:00-12:00 PM’, task: ‘Office work (take 5 min break)’, type: ‘motivational’ },
+{ id: ‘lunch’, time: ‘12:00-1:00 PM’, task: ‘Lunch break and 30 min walk’, type: ‘basic’ },
+{ id: ‘work2’, time: ‘1:00-1:30 PM’, task: ‘Post-lunch office work’, type: ‘motivational’ }
+]
+},
+{
+id: 3,
+timeSlot: “1:30 PM - 5:30 PM”,
+period: “Office Afternoon”,
+tasks: [
+{ id: ‘work3’, time: ‘1:30-4:30 PM’, task: ‘Office work (take 5 min break)’, type: ‘motivational’ },
+{ id: ‘work4’, time: ‘4:30-5:30 PM’, task: ‘Final office tasks’, type: ‘motivational’ }
+]
+},
+{
+id: 4,
+timeSlot: “5:30 PM - 9:30 PM”,
+period: “Evening & Home”,
+tasks: [
+{ id: ‘work5’, time: ‘5:30-6:30 PM’, task: ‘Complete office work’, type: ‘motivational’ },
+{ id: ‘work6’, time: ‘6:30-8:10 PM’, task: ‘Final office work completion’, type: ‘motivational’ },
+{ id: ‘home’, time: ‘8:30 PM’, task: ‘Reach home’, type: ‘basic’ },
+{ id: ‘clean’, time: ‘8:30-8:40 PM’, task: ‘Clean tiffin, change dress, soak dry fruits and sprouts’, type: ‘basic’ },
+{ id: ‘baby1’, time: ‘8:40-9:00 PM’, task: ‘Play with baby’, type: ‘basic’ },
+{ id: ‘dinner1’, time: ‘9:00 PM’, task: ‘Eat dinner’, type: ‘basic’ },
+{ id: ‘dinner2’, time: ‘9:10 PM’, task: ‘Finish dinner’, type: ‘basic’ },
+{ id: ‘baby2’, time: ‘9:10-9:30 PM’, task: ‘Spend time with baby’, type: ‘basic’ }
+]
+},
+{
+id: 5,
+timeSlot: “9:30 PM - 1:30 AM”,
+period: “Night Routine”,
+tasks: [
+{ id: ‘read’, time: ‘9:45-10:00 PM’, task: ‘Read book, review daily tasks, prepare dress for tomorrow’, type: ‘motivational’ },
+{ id: ‘spouse’, time: ‘10:00-10:30 PM’, task: ‘Spend time with spouse’, type: ‘basic’ },
+{ id: ‘bedprep’, time: ‘10:30-10:45 PM’, task: ‘Prepare bed and apply cream to baby’, type: ‘basic’ },
+{ id: ‘sleep’, time: ‘10:45 PM’, task: ‘Sleep’, type: ‘basic’ }
+]
+}
+];
+
+const [schedule, setSchedule] = useState(defaultSchedule);
+
+const motivationalQuotes = [
+“Great job! Every small step counts towards your bigger goals!”,
+“You’re building discipline one task at a time. Keep going!”,
+“Consistency is the key to success. You’re doing amazing!”,
+“Your dedication today shapes your tomorrow. Well done!”,
+“Progress, not perfection. You’re on the right track!”,
+“Every completed task is a victory. Celebrate this moment!”,
+“Your commitment to growth is inspiring. Keep pushing forward!”,
+“Success is built on daily habits. You’re building yours perfectly!”,
+“You’re creating a better version of yourself every day!”,
+“Discipline is freedom. You’re investing in your future self!”
+];
+
+const getCurrentTimeSlot = () => {
+const now = new Date();
+const currentHour = now.getHours();
+const currentMinute = now.getMinutes();
+const currentTime = currentHour * 60 + currentMinute;
+
+```
+// Define 4-hour time slots in minutes from midnight
+const timeSlots = [
+  { slot: 0, start: 330, end: 570 }, // 5:30 AM - 9:30 AM
+  { slot: 1, start: 570, end: 810 }, // 9:30 AM - 1:30 PM
+  { slot: 2, start: 810, end: 1050 }, // 1:30 PM - 5:30 PM
+  { slot: 3, start: 1050, end: 1290 }, // 5:30 PM - 9:30 PM
+  { slot: 4, start: 1290, end: 90 } // 9:30 PM - 1:30 AM (next day)
+];
+
+for (let i = 0; i < timeSlots.length; i++) {
+  const slot = timeSlots[i];
+  if (slot.end < slot.start) { // Handle overnight slot
+    if (currentTime >= slot.start || currentTime <= slot.end) {
+      return i;
+    }
+  } else {
+    if (currentTime >= slot.start && currentTime < slot.end) {
+      return i;
+    }
+  }
+}
+return 0; // Default to first slot
+```
+
+};
+
+const [currentSlot, setCurrentSlot] = useState(getCurrentTimeSlot());
+
+useEffect(() => {
+// Save missed tasks at the end of each day
+const saveMissedTasks = () => {
+const today = new Date().toDateString();
+const allTasks = schedule.flatMap(slot => slot.tasks);
+const missedTasks = allTasks.filter(task => !completedTasks.has(task.id));
+
+```
+  if (missedTasks.length > 0) {
+    setMissedTasksHistory(prev => ({
+      ...prev,
+      [today]: missedTasks
+    }));
+  }
+};
+
+const timer = setInterval(() => {
+  const newDate = new Date();
+  const prevDateString = currentDate.toDateString();
+  const newDateString = newDate.toDateString();
+  
+  if (prevDateString !== newDateString) {
+    saveMissedTasks();
+    setCompletedTasks(new Set());
+  }
+  
+  setCurrentDate(newDate);
+  setCurrentSlot(getCurrentTimeSlot());
+}, 60000);
+
+return () => clearInterval(timer);
+```
+
+}, [currentDate, completedTasks, schedule]);
+
+const handleTaskComplete = (taskId, taskType) => {
+setCompletedTasks(prev => new Set([…prev, taskId]));
+
+```
+if (taskType === 'motivational') {
+  const randomQuote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
+  setMotivationQuote(randomQuote);
+  setShowMotivation(true);
+  setTimeout(() => setShowMotivation(false), 3000);
+}
+```
+
+};
+
+const saveScheduleChanges = () => {
+if (editableSchedule) {
+setSchedule(editableSchedule);
+setIsEditMode(false);
+setEditableSchedule(null);
+}
+};
+
+const startEditing = () => {
+setEditableSchedule(JSON.parse(JSON.stringify(schedule)));
+setIsEditMode(true);
+};
+
+const updateTaskInEdit = (slotId, taskId, field, value) => {
+setEditableSchedule(prev =>
+prev.map(slot =>
+slot.id === slotId
+? {
+…slot,
+tasks: slot.tasks.map(task =>
+task.id === taskId ? { …task, [field]: value } : task
+)
+}
+: slot
+)
+);
+};
+
+const addNewTask = (slotId) => {
+const newTaskId = Date.now().toString();
+setEditableSchedule(prev =>
+prev.map(slot =>
+slot.id === slotId
+? {
+…slot,
+tasks: […slot.tasks, {
+id: newTaskId,
+time: ‘00:00 AM’,
+task: ‘New Task’,
+type: ‘basic’
+}]
+}
+: slot
+)
+);
+};
+
+const removeTask = (slotId, taskId) => {
+setEditableSchedule(prev =>
+prev.map(slot =>
+slot.id === slotId
+? {
+…slot,
+tasks: slot.tasks.filter(task => task.id !== taskId)
+}
+: slot
+)
+);
+};
+
+const formatDate = (date) => {
+return date.toLocaleDateString(‘en-US’, {
+weekday: ‘long’,
+year: ‘numeric’,
+month: ‘long’,
+day: ‘numeric’
+});
+};
+
+const getMissedTasksStats = () => {
+const last7Days = Array.from({length: 7}, (_, i) => {
+const date = new Date();
+date.setDate(date.getDate() - i);
+return date.toDateString();
+});
+
+```
+return last7Days.map(date => ({
+  date,
+  missedTasks: missedTasksHistory[date] || []
+})).reverse();
+```
+
+};
+
+const renderDashboard = () => {
+const stats = getMissedTasksStats();
+const allTaskIds = schedule.flatMap(slot => slot.tasks.map(task => task.id));
+const todayMissed = allTaskIds.filter(id => !completedTasks.has(id));
+
+```
+return (
+  <div className="p-6 space-y-6">
+    <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+      <BarChart3 className="text-blue-600" size={24} />
+      MIS Dashboard
+    </h2>
+
+    {/* Today's Missing Tasks */}
+    <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+      <h3 className="font-semibold text-red-800 flex items-center gap-2 mb-3">
+        <AlertCircle size={18} />
+        Today's Incomplete Tasks ({todayMissed.length})
+      </h3>
+      {todayMissed.length > 0 ? (
+        <div className="space-y-2">
+          {todayMissed.map(taskId => {
+            const task = schedule.flatMap(s => s.tasks).find(t => t.id === taskId);
+            return task ? (
+              <div key={taskId} className="bg-white p-2 rounded border-l-4 border-red-400">
+                <p className="text-sm font-medium text-gray-800">{task.task}</p>
+                <p className="text-xs text-gray-600">{task.time}</p>
+              </div>
+            ) : null;
+          })}
+        </div>
+      ) : (
+        <p className="text-green-700">Great! All tasks completed for today.</p>
+      )}
+    </div>
+
+    {/* Weekly Trend */}
+    <div className="bg-gray-50 rounded-xl p-4">
+      <h3 className="font-semibold text-gray-800 flex items-center gap-2 mb-3">
+        <TrendingDown size={18} />
+        Last 7 Days Missed Tasks
+      </h3>
+      <div className="space-y-3">
+        {stats.map(({ date, missedTasks }, index) => {
+          const dateObj = new Date(date);
+          const isToday = dateObj.toDateString() === new Date().toDateString();
+          return (
+            <div key={date} className={`p-3 rounded-lg ${isToday ? 'bg-blue-50 border border-blue-200' : 'bg-white'}`}>
+              <div className="flex justify-between items-center mb-2">
+                <span className={`text-sm font-medium ${isToday ? 'text-blue-800' : 'text-gray-700'}`}>
+                  {dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                  {isToday && ' (Today)'}
+                </span>
+                <span className={`text-sm px-2 py-1 rounded-full ${
+                  missedTasks.length === 0 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-red-100 text-red-700'
+                }`}>
+                  {missedTasks.length} missed
+                </span>
+              </div>
+              {missedTasks.length > 0 && (
+                <div className="text-xs text-gray-600">
+                  {missedTasks.slice(0, 3).map(task => task.task).join(', ')}
+                  {missedTasks.length > 3 && '...'}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  </div>
+);
+```
+
+};
+
+const renderMasterSchedule = () => {
+const workingSchedule = editableSchedule || schedule;
+
+```
+return (
+  <div className="p-6 space-y-6">
+    <div className="flex justify-between items-center">
+      <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+        <Settings className="text-blue-600" size={24} />
+        Master Schedule
+      </h2>
+      <button
+        onClick={isEditMode ? saveScheduleChanges : startEditing}
+        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+          isEditMode 
+            ? 'bg-green-600 text-white hover:bg-green-700' 
+            : 'bg-blue-600 text-white hover:bg-blue-700'
+        }`}
+      >
+        {isEditMode ? 'Save Changes' : 'Edit Schedule'}
+      </button>
+    </div>
+
+    <div className="space-y-6">
+      {workingSchedule.map(slot => (
+        <div key={slot.id} className="border border-gray-200 rounded-xl p-4">
+          <h3 className="font-semibold text-gray-800 mb-3">{slot.period} ({slot.timeSlot})</h3>
+          
+          <div className="space-y-3">
+            {slot.tasks.map(task => (
+              <div key={task.id} className={`p-3 rounded-lg border ${
+                isEditMode ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'
+              }`}>
+                {isEditMode ? (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={task.time}
+                      onChange={(e) => updateTaskInEdit(slot.id, task.id, 'time', e.target.value)}
+                      className="w-full text-xs border rounded px-2 py-1"
+                      placeholder="Time"
+                    />
+                    <input
+                      type="text"
+                      value={task.task}
+                      onChange={(e) => updateTaskInEdit(slot.id, task.id, 'task', e.target.value)}
+                      className="w-full text-sm border rounded px-2 py-1"
+                      placeholder="Task description"
+                    />
+                    <div className="flex justify-between items-center">
+                      <select
+                        value={task.type}
+                        onChange={(e) => updateTaskInEdit(slot.id, task.id, 'type', e.target.value)}
+                        className="text-xs border rounded px-2 py-1"
+                      >
+                        <option value="basic">Basic</option>
+                        <option value="motivational">Motivational</option>
+                      </select>
+                      <button
+                        onClick={() => removeTask(slot.id, task.id)}
+                        className="text-red-600 text-xs hover:bg-red-100 px-2 py-1 rounded"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">{task.time}</p>
+                    <p className="text-sm font-medium text-gray-800">{task.task}</p>
+                    <span className={`inline-block mt-1 text-xs px-2 py-1 rounded-full ${
+                      task.type === 'motivational' 
+                        ? 'bg-yellow-100 text-yellow-700' 
+                        : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {task.type}
+                    </span>
+                  </div>
+                )}
+              </div>
+            ))}
+            
+            {isEditMode && (
+              <button
+                onClick={() => addNewTask(slot.id)}
+                className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors"
+              >
+                + Add New Task
+              </button>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+```
+
+};
+
+const renderRoutineView = () => {
+const currentScheduleSlot = schedule[currentSlot];
+
+```
+return (
+  <div className="p-6">
+    <div className="mb-4">
+      <div className="flex items-center gap-2 mb-2">
+        <Star className="text-yellow-500" size={20} />
+        <h2 className="text-lg font-semibold text-gray-800">
+          {currentScheduleSlot?.period}
+        </h2>
+      </div>
+      <p className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full inline-block">
+        {currentScheduleSlot?.timeSlot}
+      </p>
+    </div>
+
+    <div className="space-y-3">
+      {currentScheduleSlot?.tasks.map((task) => (
+        <div
+          key={task.id}
+          className={`flex items-start gap-3 p-4 rounded-xl border transition-all ${
+            completedTasks.has(task.id)
+              ? 'bg-green-50 border-green-200'
+              : 'bg-gray-50 border-gray-200 hover:border-blue-300'
+          }`}
+        >
+          <button
+            onClick={() => handleTaskComplete(task.id, task.type)}
+            className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+              completedTasks.has(task.id)
+                ? 'bg-green-500 border-green-500 text-white'
+                : 'border-gray-300 hover:border-blue-500'
+            }`}
+            disabled={completedTasks.has(task.id)}
+          >
+            {completedTasks.has(task.id) && <Check size={14} />}
+          </button>
+          
+          <div className="flex-1">
+            <p className="text-xs text-gray-500 mb-1">{task.time}</p>
+            <p className={`text-sm font-medium ${
+              completedTasks.has(task.id) 
+                ? 'text-green-700 line-through' 
+                : 'text-gray-800'
+            }`}>
+              {task.task}
+            </p>
+            {task.type === 'motivational' && !completedTasks.has(task.id) && (
+              <span className="inline-block mt-1 text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">
+                Motivational Task
+              </span>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <div className="mt-6 p-4 bg-blue-50 rounded-xl">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-sm text-blue-700 font-medium">Progress</span>
+        <span className="text-sm text-blue-600">
+          {completedTasks.size} / {currentScheduleSlot?.tasks.length || 0}
+        </span>
+      </div>
+      <div className="w-full bg-blue-200 rounded-full h-2">
+        <div
+          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+          style={{
+            width: `${currentScheduleSlot?.tasks.length 
+              ? (completedTasks.size / currentScheduleSlot.tasks.length) * 100 
+              : 0}%`
+          }}
+        />
+      </div>
+    </div>
+
+    <div className="flex gap-2 mt-4">
+      <button
+        onClick={() => setCurrentSlot(Math.max(0, currentSlot - 1))}
+        disabled={currentSlot === 0}
+        className="flex-1 py-2 px-4 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-300 transition-colors"
+      >
+        Previous
+      </button>
+      <button
+        onClick={() => setCurrentSlot(Math.min(schedule.length - 1, currentSlot + 1))}
+        disabled={currentSlot === schedule.length - 1}
+        className="flex-1 py-2 px-4 bg-blue-600 text-white rounded-lg disabled:opacity-50 hover:bg-blue-700 transition-colors"
+      >
+        Next
+      </button>
+    </div>
+  </div>
+);
+```
+
+};
+
+return (
+<>
+{/* PWA Meta Tags */}
+<div style={{display: ‘none’}}>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Daily Routine" />
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDE4MCAxODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxODAiIGhlaWdodD0iMTgwIiByeD0iNDAiIGZpbGw9IiMzQjgyRjYiLz4KPHN2ZyB4PSI0NSIgeT0iNDUiIHdpZHRoPSI5MCIgaGVpZ2h0PSI5MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+CjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjMiLz4KPHBhdGggZD0iTTEyIDFWOSIvPgo8cGF0aCBkPSJtMjEgMy0xIDEiLz4KPGF0aCBkPSJtMjIgMTItMSAxIi8+CjxwYXRoIGQ9Im0yMSAyMSAxIDEiLz4KPGF0aCBkPSJNMTIgMjN2LTgiLz4KPGF0aCBkPSJtMyAyMS0xLTEiLz4KPGF0aCBkPSJtMiAxMiAxLTEiLz4KPGF0aCBkPSJtMyAzIDEgMSIvPgo8L3N2Zz4KPC9zdmc+" />
+</div>
+
+```
+  <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="max-w-md mx-auto bg-white shadow-xl overflow-hidden" style={{minHeight: '100vh'}}>
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white">
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-2xl font-bold">Daily Routine</h1>
+        </div>
+        <div className="flex items-center gap-2 text-blue-100">
+          <Calendar size={16} />
+          <span className="text-sm">{formatDate(currentDate)}</span>
+        </div>
+        <div className="flex items-center gap-2 text-blue-100 mt-1">
+          <Clock size={16} />
+          <span className="text-sm">{currentDate.toLocaleTimeString()}</span>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <div className="flex bg-gray-100">
+        <button
+          onClick={() => setCurrentView('routine')}
+          className={`flex-1 py-3 text-sm font-medium transition-colors ${
+            currentView === 'routine' 
+              ? 'bg-white text-blue-600 border-b-2 border-blue-600' 
+              : 'text-gray-600 hover:text-blue-600'
+          }`}
+        >
+          Routine
+        </button>
+        <button
+          onClick={() => setCurrentView('dashboard')}
+          className={`flex-1 py-3 text-sm font-medium transition-colors ${
+            currentView === 'dashboard' 
+              ? 'bg-white text-blue-600 border-b-2 border-blue-600' 
+              : 'text-gray-600 hover:text-blue-600'
+          }`}
+        >
+          Dashboard
+        </button>
+        <button
+          onClick={() => setCurrentView('master')}
+          className={`flex-1 py-3 text-sm font-medium transition-colors ${
+            currentView === 'master' 
+              ? 'bg-white text-blue-600 border-b-2 border-blue-600' 
+              : 'text-gray-600 hover:text-blue-600'
+          }`}
+        >
+          Master
+        </button>
+      </div>
+
+      {/* Content */}
+      {currentView === 'routine' && renderRoutineView()}
+      {currentView === 'dashboard' && renderDashboard()}
+      {currentView === 'master' && renderMasterSchedule()}
+
+      {/* Motivation Modal */}
+      {showMotivation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full animate-pulse">
+            <div className="text-center">
+              <Star className="text-yellow-500 mx-auto mb-3" size={48} />
+              <h3 className="text-lg font-bold text-gray-800 mb-2">Great Job!</h3>
+              <p className="text-gray-600">{motivationQuote}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+</>
+```
+
+);
+};
+
+export default DailyRoutineApp;
